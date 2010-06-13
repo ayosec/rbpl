@@ -61,6 +61,8 @@ class Perl
         def request(request, options = {})
             raise EngineNotRunningError, "Engine is not running" unless @stdout and @stdin
 
+            generic_response = options.delete(:generic_response)
+
             data = { "request" => request.to_s }.merge!(options).to_yaml
             @stdout.print([data.length].pack("L") + data)
 
@@ -71,18 +73,30 @@ class Perl
             data = @stdin.read(data_length)
             raise EngineReadingError, "Can not read data" if data.length != data_length
 
-            YAML.load data
+            response = YAML.load data
+
+            if generic_response
+                case response["status"]
+                when "ok"
+                    response["result"]
+                when "error"
+                    raise EngineCodeError, response["error"].chomp
+                end
+            else
+                response
+            end
         end
 
         def eval(code)
-            response = request :eval, "code" => code
+            request :eval, "code" => code, :generic_response => true
+        end
 
-            case response["status"]
-            when "ok"
-                response["result"]
-            when "error"
-                raise EngineCodeError, response["error"].chomp
-            end
+        def define_method(method_name, body)
+            request "define_method", "name" => method_name.to_s, "body" => body.to_s, :generic_response => true
+        end
+
+        def invoke_method(method_name, *arguments)
+            request "invoke_method", "name" => method_name.to_s, "arguments" => arguments, :generic_response => true
         end
     end
 end
