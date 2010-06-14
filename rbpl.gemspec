@@ -2,7 +2,7 @@ require "rubygems"
 
 spec = Gem::Specification.new do |gem|
    gem.name        = "rbpl"
-   gem.version     = "0.1"
+   gem.version     = "0.2"
    gem.author      = "Ayose Cazorla"
    gem.email       = "setepo@gmail.com"
    gem.homepage    = "http://github.com/setepo/rbpl"

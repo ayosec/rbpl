@@ -3,7 +3,11 @@
 use strict;
 use YAML::Syck;
 
-$| =1; # autoflush
+use IO::Handle;
+
+open Reader, "<&=", $ENV{ENGINE_READER};
+open Writer, ">&=", $ENV{ENGINE_WRITER};
+Writer->autoflush(1);
 
 our $data;
 our $data_length;
@@ -17,18 +21,18 @@ sub eval_and_respond {
     my $packed_result = Dump($@ ?
                     { status => "error", error => $@ } :
                     { status => "ok", result => $result });
-    print pack("L", length($packed_result)).$packed_result;
+    print Writer pack("L", length($packed_result)).$packed_result;
     $result;
 }
 
 while(1) {
 
-    exit 0 if eof(STDIN); # Wait for data or exit if the parent closes the pipe
+    exit 0 if eof(Reader); # Wait for data or exit if the parent closes the pipe
 
-    read(STDIN, $data_length, 4) == 4 or die "Can not read \$data_length from stdin";
+    read(Reader, $data_length, 4) == 4 or die "Can not read \$data_length from stdin";
     $data_length = unpack("L", $data_length);
 
-    read(STDIN, $data, $data_length) == $data_length or die "Can not read \$data from stdin";
+    read(Reader, $data, $data_length) == $data_length or die "Can not read \$data from stdin";
     $data = Load($data);    
 
     if($data->{request} eq "eval") {

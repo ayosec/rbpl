@@ -29,12 +29,9 @@ class Perl
 
             @pid = fork do
                 writer[1].close
-                STDIN.reopen(writer[0])
-                writer[0].close
-
                 reader[0].close
-                STDOUT.reopen(reader[1])
-                reader[1].close
+                ENV["ENGINE_READER"] = writer[0].fileno.to_s
+                ENV["ENGINE_WRITER"] = reader[1].fileno.to_s
 
                 exec "perl", PerlFile
             end
